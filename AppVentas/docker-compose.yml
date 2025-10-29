@@ -1,0 +1,51 @@
+name: appventas
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: ventasdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5433:5432"  # Puerto externo 5433, interno 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  backend:
+    build: ./backend
+    container_name: springboot-app
+    ports:
+      - "8081:8080"  # Puerto externo 8081, interno 8080
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ventasdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: admin123
+    depends_on:
+      - db
+    networks:
+      - app-net
+
+  frontend:
+    build: ./frontend
+    container_name: react-app
+    ports:
+      - "5173:80"  # Puerto externo 5173, interno 80 (Nginx sirve el build de Vite)
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  pgdata:
+
+networks:
+  app-net:
