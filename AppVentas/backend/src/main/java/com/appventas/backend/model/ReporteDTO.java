@@ -1,7 +1,10 @@
 package com.appventas.backend.model;
 
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReporteDTO {
 
     // Para productos

@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Layout from "./components/Layout";
 import Productos from "./pages/Productos";
 import Clientes from "./pages/Clientes";
+import Ventas from "./pages/Ventas";
 
 function App() {
   return (
@@ -13,7 +14,7 @@ function App() {
         <Route index element={<Navigate to="/productos" replace />} />
         <Route path="productos" element={<Productos />} />
         <Route path="clientes" element={<Clientes />} />
-        <Route path="ventas" element={<Clientes />} />
+        <Route path="ventas" element={<Ventas />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

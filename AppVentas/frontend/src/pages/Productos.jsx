@@ -12,35 +12,92 @@ const API_URL = "http://192.168.10.100:8081/api/productos";
 function Productos() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [displayModal, setDisplayModal] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
-  const [error, setError] = useState(null);
-
-  const openEditDialog = (product) => {
-    console.log(product);
-    alert(
-      `Acaba de seleccionar el producto: ${
-        product.nombre || product.name || product.id
-      }`
-    );
-  };
+  const [formData, setFormData] = useState({
+    nombre: "",
+    descripcion: "",
+    precio: "",
+    stock: "",
+  });
 
   const newProduct = () => {
-    console.log("abrira un form");
+    setFormData({ nombre: "", descripcion: "", precio: "", stock: "" });
+    setProductToEdit(null);
+    setDisplayModal(true);
+  };
+
+  const openEditDialog = (product) => {
+    setFormData({
+      nombre: product.nombre,
+      descripcion: product.descripcion,
+      precio: product.precio,
+      stock: product.stock,
+    });
+    setProductToEdit(product);
+    setDisplayModal(true);
   };
 
   const closeEditDialog = () => {};
 
-  const handleDelete = (product) => {
-    let isdeleted = confirm(
-      `Esta seguro de eliminar el producto: ${product.id}`
-    );
+const handleDelete = async (product) => {
+  const isDeleted = confirm(`¿Está seguro de eliminar el producto: ${product.id}?`);
 
-    if (isdeleted) {
-      console.log(`se borró el producto ${product.nombre}`);
-      console.log(product);
+  if (isDeleted) {
+    try {
+      const username = "admin";
+      const password = "admin123";
+      const token = btoa(`${username}:${password}`);
+
+      await axios.delete(`${API_URL}/${product.id}`, {
+        headers: {
+          Authorization: `Basic ${token}`,
+        },
+      });
+
+      // Actualizar la lista local después de eliminar
+      setProducts((prevProducts) =>
+        prevProducts.filter((p) => p.id !== product.id)
+      );
+
+      console.log(`Producto ${product.nombre} eliminado exitosamente`);
+    } catch (err) {
+      console.error("Error al eliminar el producto:", err);
+      alert("No se pudo eliminar el producto. Verifique el backend o las credenciales.");
     }
-  };
+  }
+};
+
+const handleSave = async () => {
+  const username = "admin";
+  const password = "admin123";
+  const token = btoa(`${username}:${password}`);
+
+  try {
+    if (productToEdit) {
+      // Modificar producto
+      await axios.put(`${API_URL}/${productToEdit.id}`, formData, {
+        headers: { Authorization: `Basic ${token}` },
+      });
+    } else {
+      // Crear nuevo producto
+      await axios.post(API_URL, formData, {
+        headers: { Authorization: `Basic ${token}` },
+      });
+    }
+
+    // Actualizar lista
+    const response = await axios.get(API_URL, {
+      headers: { Authorization: `Basic ${token}` },
+    });
+    setProducts(response.data);
+    setDisplayModal(false);
+  } catch (err) {
+    console.error("Error al guardar el producto:", err);
+    alert("No se pudo guardar el producto. Verifique los datos o el backend.");
+  }
+};
 
   const actionBodyTemplate = (rowData) => {
     return (
@@ -111,59 +168,118 @@ function Productos() {
   }
 
   return (
-    <Card className="p-shadow-1 p-p-5 u-margin-top-medium u-padding-side-small">
-      <DataTable
-        value={products}
-        header={header}
-        dataKey="id"
-        loading={loading}
-        paginator
-        rows={10}
-        rowsPerPageOptions={[5, 10, 25]}
-        filterDisplay="row"
-        className="tabla-full-width"
-        emptyMessage="No se han registrado productos."
+    <>
+      <Card className="p-shadow-1 p-p-5 u-margin-top-medium u-padding-side-small">
+        <DataTable
+          value={products}
+          header={header}
+          dataKey="id"
+          loading={loading}
+          paginator
+          rows={10}
+          rowsPerPageOptions={[5, 10, 25]}
+          filterDisplay="row"
+          className="tabla-full-width"
+          emptyMessage="No se han registrado productos."
+        >
+          <Column field="id" header="ID" sortable className="text-center" />
+          <Column
+            field="nombre"
+            header="Nombre"
+            sortable
+            filter
+            filterPlaceholder="filtrar por producto"
+          />
+          <Column
+            field="descripcion"
+            header="Descripción"
+            sortable
+            filter
+            filterPlaceholder="Buscar por descripcion del producto"
+          />
+          <Column
+            field="precio"
+            header="Precio Unitario"
+            sortable
+            filter
+            filterPlaceholder="filtrar por precio"
+            className="text-center"
+          />
+          <Column
+            field="stock"
+            header="Stock"
+            sortable
+            filter
+            filterPlaceholder="filtrar por cantidad"
+            className="text-center"
+          />
+          <Column
+            header="Acciones"
+            body={actionBodyTemplate}
+            exportable={false}
+            style={{ minWidth: "10rem" }}
+            className="text-center"
+          />
+        </DataTable>
+      </Card>
+      
+      <Dialog
+        header={productToEdit ? "Editar Producto" : "Nuevo Producto"}
+        visible={displayModal}
+        style={{ width: "30vw" }}
+        modal
+        onHide={() => setDisplayModal(false)}
       >
-        <Column field="id" header="ID" sortable className="text-center" />
-        <Column
-          field="nombre"
-          header="Nombre"
-          sortable
-          filter
-          filterPlaceholder="filtrar por producto"
-        />
-        <Column
-          field="descripcion"
-          header="Descripción"
-          sortable
-          filter
-          filterPlaceholder="Buscar por descripcion del producto"
-        />
-        <Column
-          field="precio"
-          header="Precio Unitario"
-          sortable
-          filter
-          filterPlaceholder="filtrar por precio"
-          className="text-center"
-        />
-        <Column
-          field="stock"
-          header="Stock"
-          sortable
-          filter
-          filterPlaceholder="filtrar por cantidad"
-          className="text-center"
-        />
-        <Column
-          header="Acciones"
-          body={actionBodyTemplate}
-          exportable={false}
-          style={{ minWidth: "10rem" }}
-          className="text-center"
-        />
-      </DataTable>
-    </Card>
+        <div className="p-fluid">
+          <div className="p-field">
+            <label htmlFor="nombre">Nombre</label>
+            <input
+              id="nombre"
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              className="p-inputtext"
+            />
+          </div>
+          <div className="p-field">
+            <label htmlFor="descripcion">Descripción</label>
+            <input
+              id="descripcion"
+              type="text"
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              className="p-inputtext"
+            />
+          </div>
+          <div className="p-field">
+            <label htmlFor="precio">Precio</label>
+            <input
+              id="precio"
+              type="number"
+              value={formData.precio}
+              onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+              className="p-inputtext"
+            />
+          </div>
+          <div className="p-field">
+            <label htmlFor="stock">Stock</label>
+            <input
+              id="stock"
+              type="number"
+              value={formData.stock}
+              onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+              className="p-inputtext"
+            />
+          </div>
+          <Button
+            label="Guardar"
+            icon="pi pi-check"
+            className="p-button-success"
+            onClick={handleSave}
+          />
+        </div>
+      </Dialog>
+    </>
   );
 }
 

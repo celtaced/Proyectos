@@ -64,3 +64,64 @@ CREATE TABLE detalle_venta (
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 );
+
+
+-- Tabla de detalle de ventas
+CREATE TABLE detalle_venta (
+    id SERIAL PRIMARY KEY,
+    venta_id INTEGER NOT NULL,
+    producto_id INTEGER NOT NULL,
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    precio_unitario DECIMAL(10,2) NOT NULL CHECK (precio_unitario >= 0),
+    subtotal DECIMAL(10,2) NOT NULL CHECK (subtotal >= 0),
+    FOREIGN KEY (venta_id) REFERENCES ventas(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (producto_id) REFERENCES productos(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+CREATE OR REPLACE FUNCTION obtener_top_3_productos()
+RETURNS TABLE (
+    producto_id INT,
+    nombre TEXT,
+    total_vendido INT
+)
+LANGUAGE sql
+AS $$
+    SELECT p.id, p.nombre, SUM(dv.cantidad) AS total_vendido
+    FROM detalle_venta dv
+    JOIN productos p ON p.id = dv.producto_id
+    GROUP BY p.id, p.nombre
+    ORDER BY total_vendido DESC
+    LIMIT 3;
+$$;
+
+CREATE OR REPLACE FUNCTION cliente_top_ingresos()
+RETURNS TABLE (
+    cliente_id INT,
+    nombre TEXT,
+    total_ingresos DECIMAL(10,2)
+)
+LANGUAGE sql
+AS $$
+    SELECT c.id, c.nombre, SUM(v.total) AS total_ingresos
+    FROM ventas v
+    JOIN clientes c ON c.id = v.cliente_id
+    GROUP BY c.id, c.nombre
+    ORDER BY total_ingresos DESC
+    LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION ingreso_total_ultimo_mes()
+RETURNS DECIMAL(10,2)
+LANGUAGE sql
+AS $$
+    SELECT COALESCE(SUM(total), 0)
+    FROM ventas
+    WHERE fecha >= CURRENT_DATE - INTERVAL '30 days';
+$$;
+
+select * from ingreso_total_ultimo_mes();

@@ -30,7 +30,10 @@ public class SecurityConfig {
                 
                 // Permitir todas las solicitudes a /api/productos/** (GET, POST, etc.)
                 .requestMatchers("/api/productos/**").permitAll() 
-                
+
+                // Permitir todas las solicitudes a /api/reportes/**
+                .requestMatchers("/api/reportes/**").permitAll()
+
                 // Cualquier otra solicitud (si la hubiera) debe ser autenticada
                 .anyRequest().authenticated()
             )

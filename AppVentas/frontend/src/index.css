@@ -84,8 +84,8 @@ h1 {
 
 .container {
   display: flex;
-  width: 80%;
-  height: 60vh;
+  width: 40%;
+  height: auto;
   margin: 10rem auto;
 }
 
